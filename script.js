@@ -205,6 +205,47 @@ function appendMessage(role, contentNodeOrText, rawText = "") {
   return msg;
 }
 
+const GEMINI_DIRECT_KEY = "AIzaSyAMrkwo0WVw3vgENrIL39jdO9r708R1zdQ";
+
+async function callDirectGemini(prompt, history = []) {
+  const contents = [];
+  if (Array.isArray(history)) {
+    for (const turn of history.slice(-8)) {
+      if (turn.role && turn.text) {
+        contents.push({
+          role: turn.role === "user" ? "user" : "model",
+          parts: [{ text: turn.text }],
+        });
+      }
+    }
+  }
+  contents.push({ role: "user", parts: [{ text: prompt }] });
+
+  const systemInstruction = {
+    parts: [{ text: "You are a calm, patient academic study coach. Help the student understand concepts, study their weaker topics, and test their recall. Keep responses focused, encouraging, and clear without robotic jargon or excessive formatting. When quizzing, ask 1 or 2 clear questions at a time and explain answers simply." }],
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(GEMINI_DIRECT_KEY)}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents,
+      systemInstruction,
+    }),
+  });
+
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(data.error.message || "Gemini API error");
+  }
+
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) throw new Error("No response text received from Gemini.");
+  return reply;
+}
+
 let chatApiUrl = "/api/chat";
 
 async function sendChatToGemini(userText) {
@@ -224,6 +265,14 @@ async function sendChatToGemini(userText) {
   chatMessages.appendChild(typingIndicator);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  let fullPrompt = trimmedText;
+  if (currentWeakestTopics && currentWeakestTopics.length > 0) {
+    const topicsStr = currentWeakestTopics
+      .map((t) => `${t.name} (${t.grade}%)`)
+      .join(", ");
+    fullPrompt = `[Context: Student's lower-scoring topics: ${topicsStr}]\n\n${trimmedText}`;
+  }
+
   const payload = {
     message: trimmedText,
     history: chatHistory,
@@ -234,36 +283,45 @@ async function sendChatToGemini(userText) {
   };
 
   try {
-    let res = await fetch(chatApiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let reply = null;
 
-    // If 404 (e.g. on Netlify without redirects applied), automatically retry Netlify functions endpoint
-    if (res.status === 404 && chatApiUrl === "/api/chat") {
-      const netlifyRes = await fetch("/.netlify/functions/chat", {
+    // 1. Try local/serverless backend first if available
+    try {
+      let res = await fetch(chatApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (netlifyRes.status !== 404) {
-        chatApiUrl = "/.netlify/functions/chat";
-        res = netlifyRes;
+
+      // If 404 (e.g. on Netlify without redirects applied), automatically retry Netlify functions endpoint
+      if (res.status === 404 && chatApiUrl === "/api/chat") {
+        const netlifyRes = await fetch("/.netlify/functions/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (netlifyRes.status !== 404) {
+          chatApiUrl = "/.netlify/functions/chat";
+          res = netlifyRes;
+        }
       }
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.response) {
+          reply = data.response;
+        }
+      }
+    } catch {
+      // Backend not running (e.g. static drag & drop on Netlify Drop)
+    }
+
+    // 2. If backend didn't return a reply (e.g. static host, 404, or 502), call Gemini directly!
+    if (!reply) {
+      reply = await callDirectGemini(fullPrompt, chatHistory);
     }
 
     typingIndicator.remove();
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      const errorText = errorData.error || `Server error: ${res.status}`;
-      appendMessage("error", errorText);
-      return;
-    }
-
-    const data = await res.json();
-    const reply = data.response || "No response received.";
     appendMessage("assistant", reply, reply);
     chatHistory.push({ role: "model", text: reply });
   } catch (err) {
