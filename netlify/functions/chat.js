@@ -24,184 +24,168 @@ function getApiKey() {
   return null;
 }
 
-async function generateStudyResponse(body) {
-  const { message, history = [], context = {} } = body || {};
-
-  if (!message && !context.weakestTopics) {
-    throw new Error('Message or topic context is required.');
-  }
-
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured. In Netlify, go to Site configuration > Environment variables and add GEMINI_API_KEY.');
-  }
-
-  const ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
-
-  const contents = [];
-  if (Array.isArray(history)) {
-    for (const turn of history.slice(-8)) {
-      if (turn.role && turn.text) {
-        contents.push({
-          role: turn.role === 'user' ? 'user' : 'model',
-          parts: [{ text: turn.text }],
-        });
-      }
-    }
-  }
-
-  let currentPrompt = message || '';
-  if (context.weakestTopics && context.weakestTopics.length > 0) {
-    const topicsStr = context.weakestTopics
-      .map((t) => `${t.name} (${t.grade}%)`)
-      .join(', ');
-    currentPrompt = `[Context: Student's lower-scoring topics: ${topicsStr}]\n\n${currentPrompt}`;
-  }
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: currentPrompt }],
-  });
-
-  const systemInstruction =
-    'You are a calm, patient academic study coach. Help the student understand concepts, study their weaker topics, and test their recall. Keep responses focused, encouraging, and clear without robotic jargon or excessive formatting. When quizzing, ask 1 or 2 clear questions at a time and explain answers simply.';
-
-  let response;
-  try {
-    response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents,
-      config: { systemInstruction },
-    });
-  } catch (primaryErr) {
-    if (primaryErr.message && (primaryErr.message.includes('503') || primaryErr.message.includes('UNAVAILABLE'))) {
-      response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents,
-        config: { systemInstruction },
-      });
-    } else {
-      throw primaryErr;
-    }
-  }
-
-  return response.text;
+function isWebRequest(obj) {
+  return !!(obj && typeof obj.json === 'function' && typeof obj.text === 'function');
 }
 
-// Netlify classic handler
-export const handler = async (event, context) => {
-  const headers = {
+async function extractBody(reqOrEvent) {
+  if (!reqOrEvent) return {};
+  if (reqOrEvent.body && typeof reqOrEvent.body === 'object') {
+    return reqOrEvent.body;
+  }
+  if (typeof reqOrEvent.body === 'string') {
+    try {
+      return JSON.parse(reqOrEvent.body);
+    } catch {
+      return {};
+    }
+  }
+  if (typeof reqOrEvent.json === 'function') {
+    try {
+      return await reqOrEvent.json();
+    } catch {}
+  }
+  if (typeof reqOrEvent.text === 'function') {
+    try {
+      const text = await reqOrEvent.text();
+      return JSON.parse(text);
+    } catch {}
+  }
+  return {};
+}
+
+function sendResponse(reqOrEvent, context, data, status = 200) {
+  const corsHeaders = {
+    'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  // Express server (context is res)
+  if (context && typeof context.status === 'function' && typeof context.json === 'function') {
+    return context.status(status).json(data);
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+  // Netlify v2 (Standard Web Response)
+  if (isWebRequest(reqOrEvent)) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: corsHeaders,
+    });
+  }
+
+  // Netlify v1 (AWS Lambda event format)
+  return {
+    statusCode: status,
+    headers: corsHeaders,
+    body: JSON.stringify(data),
+  };
+}
+
+async function chatService(reqOrEvent, context) {
+  const method = (reqOrEvent?.method || reqOrEvent?.httpMethod || 'POST').toUpperCase();
+
+  if (method === 'OPTIONS') {
+    return sendResponse(reqOrEvent, context, {}, 200);
+  }
+
+  if (method !== 'POST') {
+    return sendResponse(reqOrEvent, context, { error: 'Method not allowed' }, 405);
   }
 
   try {
-    let body = {};
-    if (event.body) {
-      body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+    const body = await extractBody(reqOrEvent);
+    const { message, history = [], context: studyContext = {} } = body;
+
+    if (!message && !studyContext.weakestTopics) {
+      return sendResponse(reqOrEvent, context, { error: 'Message or topic context is required.' }, 400);
     }
-    const reply = await generateStudyResponse(body);
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ response: reply }),
-    };
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      return sendResponse(
+        reqOrEvent,
+        context,
+        { error: 'GEMINI_API_KEY is not configured. Please add GEMINI_API_KEY in your Netlify site settings under Environment variables.' },
+        503
+      );
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+
+    const contents = [];
+    if (Array.isArray(history)) {
+      for (const turn of history.slice(-8)) {
+        if (turn.role && turn.text) {
+          contents.push({
+            role: turn.role === 'user' ? 'user' : 'model',
+            parts: [{ text: turn.text }],
+          });
+        }
+      }
+    }
+
+    let currentPrompt = message || '';
+    if (studyContext.weakestTopics && studyContext.weakestTopics.length > 0) {
+      const topicsStr = studyContext.weakestTopics
+        .map((t) => `${t.name} (${t.grade}%)`)
+        .join(', ');
+      currentPrompt = `[Context: Student's lower-scoring topics: ${topicsStr}]\n\n${currentPrompt}`;
+    }
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: currentPrompt }],
+    });
+
+    const systemInstruction =
+      'You are a calm, patient academic study coach. Help the student understand concepts, study their weaker topics, and test their recall. Keep responses focused, encouraging, and clear without robotic jargon or excessive formatting. When quizzing, ask 1 or 2 clear questions at a time and explain answers simply.';
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents,
+        config: { systemInstruction },
+      });
+    } catch (primaryErr) {
+      if (primaryErr.message && (primaryErr.message.includes('503') || primaryErr.message.includes('UNAVAILABLE'))) {
+        response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents,
+          config: { systemInstruction },
+        });
+      } else {
+        throw primaryErr;
+      }
+    }
+
+    return sendResponse(reqOrEvent, context, { response: response.text }, 200);
   } catch (err) {
     let errorMsg = err.message || 'Error generating study advice.';
     try {
       const parsed = JSON.parse(errorMsg);
       if (parsed?.error?.message) errorMsg = parsed.error.message;
     } catch {}
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: errorMsg }),
-    };
+    return sendResponse(reqOrEvent, context, { error: errorMsg }, 500);
   }
-};
-
-// Also support Netlify v2 & default export for Express
-export default async function (req, context) {
-  // If called by Express server
-  if (context && typeof context.status === 'function' && typeof context.json === 'function') {
-    const res = context;
-    try {
-      const reply = await generateStudyResponse(req.body);
-      return res.json({ response: reply });
-    } catch (err) {
-      let errorMsg = err.message || 'Error generating study advice.';
-      try {
-        const parsed = JSON.parse(errorMsg);
-        if (parsed?.error?.message) errorMsg = parsed.error.message;
-      } catch {}
-      return res.status(500).json({ error: errorMsg });
-    }
-  }
-
-  // If called as Netlify v2 Web Request
-  if (req instanceof Request || (req && typeof req.json === 'function')) {
-    if (req.method === 'OPTIONS') {
-      return new Response('', {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        },
-      });
-    }
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    try {
-      const body = await req.json();
-      const reply = await generateStudyResponse(body);
-      return new Response(JSON.stringify({ response: reply }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    } catch (err) {
-      let errorMsg = err.message || 'Error generating study advice.';
-      try {
-        const parsed = JSON.parse(errorMsg);
-        if (parsed?.error?.message) errorMsg = parsed.error.message;
-      } catch {}
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-    }
-  }
-
-  return handler(req, context);
 }
+
+// Netlify v1 handler
+export const handler = chatService;
+
+// Netlify v2 handler / Express default export
+export default chatService;
+
+// Netlify v2 path config
+export const config = {
+  path: ['/api/chat', '/.netlify/functions/chat'],
+};
