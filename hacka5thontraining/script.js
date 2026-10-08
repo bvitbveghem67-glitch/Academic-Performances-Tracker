@@ -5,7 +5,14 @@ const chatSendBtn = document.querySelector("#chat-send");
 const quizWeakBtn = document.querySelector("#quiz-weak-btn");
 const studyPlanBtn = document.querySelector("#study-plan-btn");
 const explainBtn = document.querySelector("#explain-btn");
-const connectionStatus = document.querySelector("#connection-status");
+const clearChatBtn = document.querySelector("#clear-chat-btn");
+const sampleDataBtn = document.querySelector("#sample-data-btn");
+const clearFormBtn = document.querySelector("#clear-form-btn");
+
+const statsOverview = document.querySelector("#stats-overview");
+const statAverage = document.querySelector("#stat-average");
+const statCount = document.querySelector("#stat-count");
+const statWeakest = document.querySelector("#stat-weakest");
 
 const gradeForm = document.querySelector("#grade-form");
 const gradeRows = document.querySelector("#grade-rows");
@@ -28,7 +35,7 @@ function updateGradeRowControls() {
   });
 }
 
-function createGradeRow(rowId) {
+function createGradeRow(rowId, topicVal = "", gradeVal = "") {
   const row = document.createElement("div");
   row.className = "grade-row";
 
@@ -43,6 +50,7 @@ function createGradeRow(rowId) {
   topicInput.type = "text";
   topicInput.maxLength = 50;
   topicInput.placeholder = "e.g. Chemistry";
+  topicInput.value = topicVal;
   topicInput.required = true;
 
   const gradeLabel = document.createElement("label");
@@ -58,6 +66,7 @@ function createGradeRow(rowId) {
   gradeInput.max = "100";
   gradeInput.step = "1";
   gradeInput.placeholder = "0–100";
+  gradeInput.value = gradeVal;
   gradeInput.required = true;
 
   const removeButton = document.createElement("button");
@@ -88,6 +97,56 @@ document.querySelector("#add-grade").addEventListener("click", () => {
   newRow.querySelector("input[name='topic']").focus();
 });
 
+if (sampleDataBtn) {
+  sampleDataBtn.addEventListener("click", () => {
+    gradeRows.innerHTML = "";
+    nextGradeRowId = 1;
+    const samples = [
+      { name: "Algebra", grade: 54 },
+      { name: "Organic Chemistry", grade: 46 },
+      { name: "World History", grade: 82 },
+      { name: "English Literature", grade: 89 },
+    ];
+    samples.forEach((s) => {
+      gradeRows.append(createGradeRow(nextGradeRowId++, s.name, s.grade));
+    });
+    updateGradeRowControls();
+    gradeForm.requestSubmit();
+  });
+}
+
+if (clearFormBtn) {
+  clearFormBtn.addEventListener("click", () => {
+    gradeRows.innerHTML = "";
+    nextGradeRowId = 1;
+    gradeRows.append(createGradeRow(nextGradeRowId++, "", ""));
+    gradeRows.append(createGradeRow(nextGradeRowId++, "", ""));
+    updateGradeRowControls();
+    if (gradeChart) {
+      gradeChart.destroy();
+      gradeChart = null;
+    }
+    chartEmpty.hidden = false;
+    document.querySelector("#chart-count").textContent = "0 topics";
+    if (statsOverview) statsOverview.hidden = true;
+    currentWeakestTopics = [];
+    currentAllGrades = [];
+    if (quizWeakBtn) quizWeakBtn.disabled = true;
+    if (studyPlanBtn) studyPlanBtn.disabled = true;
+  });
+}
+
+if (clearChatBtn) {
+  clearChatBtn.addEventListener("click", () => {
+    chatMessages.innerHTML = `
+      <div class="message assistant-message">
+        <p>Chat cleared. Ask me any question, request a quiz on your subjects, or generate your study plan!</p>
+      </div>
+    `;
+    chatHistory.length = 0;
+  });
+}
+
 function formatMarkdown(text) {
   const escaped = document.createElement("div");
   escaped.textContent = text;
@@ -101,6 +160,8 @@ function formatMarkdown(text) {
   formatted = formatted.replace(/(?:^|\n)[*-] (.*?)(?=\n|$)/g, '<br>&bull; $1');
   // Numbered lists
   formatted = formatted.replace(/(?:^|\n)(\d+)\. (.*?)(?=\n|$)/g, '<br><strong>$1.</strong> $2');
+  // Headings
+  formatted = formatted.replace(/(?:^|\n)### (.*?)(?=\n|$)/g, '<br><strong>$1</strong>');
   // Paragraphs / linebreaks
   formatted = formatted.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
 
@@ -109,9 +170,10 @@ function formatMarkdown(text) {
   return span;
 }
 
-function appendMessage(role, contentNodeOrText) {
+function appendMessage(role, contentNodeOrText, rawText = "") {
   const msg = document.createElement("div");
   msg.className = `message ${role}-message`;
+
   if (typeof contentNodeOrText === "string") {
     const p = document.createElement("p");
     p.appendChild(formatMarkdown(contentNodeOrText));
@@ -119,6 +181,25 @@ function appendMessage(role, contentNodeOrText) {
   } else {
     msg.appendChild(contentNodeOrText);
   }
+
+  // Add copy button for assistant text responses
+  if (role === "assistant" && rawText) {
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "msg-copy-btn";
+    copyBtn.type = "button";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(rawText);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = "Copy"; }, 2000);
+      } catch {
+        copyBtn.textContent = "Failed";
+      }
+    });
+    msg.appendChild(copyBtn);
+  }
+
   chatMessages.appendChild(msg);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return msg;
@@ -137,7 +218,7 @@ async function sendChatToGemini(userText) {
 
   const typingIndicator = document.createElement("div");
   typingIndicator.className = "message assistant-message typing-indicator";
-  typingIndicator.textContent = "Gemini is thinking...";
+  typingIndicator.textContent = "Thinking...";
   chatMessages.appendChild(typingIndicator);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -160,17 +241,17 @@ async function sendChatToGemini(userText) {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       const errorText = errorData.error || `Server error: ${res.status}`;
-      appendMessage("error", `⚠️ ${errorText}`);
+      appendMessage("error", errorText);
       return;
     }
 
     const data = await res.json();
     const reply = data.response || "No response received.";
-    appendMessage("assistant", reply);
+    appendMessage("assistant", reply, reply);
     chatHistory.push({ role: "model", text: reply });
   } catch (err) {
     typingIndicator.remove();
-    appendMessage("error", `⚠️ Could not reach Gemini service: ${err.message}`);
+    appendMessage("error", `Could not connect to study assistant: ${err.message}`);
   } finally {
     isGenerating = false;
     if (chatSendBtn) chatSendBtn.disabled = false;
@@ -225,21 +306,21 @@ function addStudyFocusMessage(weakestTopics) {
     .join(" and ");
 
   message.className = "message assistant-message chat-focus-message";
-  text.innerHTML = `<strong>Study Focus Identified:</strong> Your two lowest grades are <strong>${topicSummary}</strong>. Let's work on strengthening these subjects!`;
+  text.innerHTML = `Your two lowest grades are <strong>${topicSummary}</strong>. Giving these topics a little extra attention will make a noticeable difference.`;
 
   buttonsWrap.className = "chat-focus-buttons";
 
   startQuizBtn.className = "primary-button";
   startQuizBtn.type = "button";
-  startQuizBtn.textContent = "🧠 Quiz Me on These Topics";
+  startQuizBtn.textContent = "Practice quiz on these topics";
   startQuizBtn.addEventListener("click", () => {
     const prompt = `Please quiz me on ${weakestTopics.map((t) => t.name).join(" and ")}. Start with 2 core concept questions.`;
     sendChatToGemini(prompt);
   });
 
-  copyQuizBtn.className = "quiz-focus-button";
+  copyQuizBtn.className = "quiz-focus-button secondary-button";
   copyQuizBtn.type = "button";
-  copyQuizBtn.textContent = "📋 Copy quiz prompt";
+  copyQuizBtn.textContent = "Copy prompt";
   status.className = "copy-prompt-status";
   status.setAttribute("role", "status");
   copyQuizBtn.addEventListener("click", async () => {
@@ -247,6 +328,7 @@ function addStudyFocusMessage(weakestTopics) {
     try {
       await navigator.clipboard.writeText(prompt);
       status.textContent = "Copied to clipboard!";
+      setTimeout(() => { status.textContent = ""; }, 2500);
     } catch {
       status.textContent = prompt;
     }
@@ -289,6 +371,17 @@ gradeForm.addEventListener("submit", (event) => {
   const weakestTopics = sortedGrades.slice(0, 2);
   currentWeakestTopics = weakestTopics;
 
+  const totalScore = grades.reduce((acc, curr) => acc + curr.grade, 0);
+  const avgScore = Math.round(totalScore / grades.length);
+
+  // Update Overview Stats Card
+  if (statsOverview) {
+    statsOverview.hidden = false;
+    if (statAverage) statAverage.textContent = `${avgScore}%`;
+    if (statCount) statCount.textContent = `${grades.length}`;
+    if (statWeakest) statWeakest.textContent = weakestTopics[0]?.name || "--";
+  }
+
   const weakestIndexes = new Set(
     grades
       .map((item, index) => ({ index, grade: item.grade }))
@@ -300,7 +393,7 @@ gradeForm.addEventListener("submit", (event) => {
   document.querySelector("#chart-name-output").textContent = chartName;
   document.querySelector("#chart-title-output").textContent = chartTitle;
   document.querySelector("#chart-count").textContent = `${grades.length} ${grades.length === 1 ? "topic" : "topics"}`;
-  document.querySelector("#chart-axis-summary").textContent = `${axisLabelTitle} · ${axisGradeTitle}`;
+  document.querySelector("#chart-axis-summary").textContent = `${axisLabelTitle} · ${axisGradeTitle} (Avg: ${avgScore}%)`;
   gradeChartCanvas.setAttribute(
     "aria-label",
     `${chartTitle}. ${grades.map((item) => `${item.name}: ${item.grade} percent`).join("; ")}`,
