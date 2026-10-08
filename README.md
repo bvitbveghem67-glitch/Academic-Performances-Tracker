@@ -1,41 +1,32 @@
 # Academic Performances Tracker
 
-A clean grade tracker with visual bar charts and an interactive study assistant to help you focus on your lowest-scoring topics.
+A simple grade tracker that plots your scores on a bar chart and highlights your lowest-scoring topics with practice quizzes and study suggestions.
 
-## Features
-
-- **Visual Grade Charting**: Automatically plots your grades with Chart.js and highlights your two lowest-scoring topics.
-- **Study Focus Assistant**: Powered by the Gemini API (`gemini-3.8-flash`) to generate practice recall quizzes, review plans, and concept explanations.
-- **Scrollable Chat Panel**: Message box with sticky controls so long answers scroll neatly without stretching the layout.
-- **Sample Data**: Single-click "Sample data" button to test the tracker immediately.
-
----
-
-## Deploy to Vercel
-
-1. **Push this repository to GitHub**.
-2. **Import into Vercel**:
-   - Go to [vercel.com/new](https://vercel.com/new) and select this repository.
-   - Framework preset: **Other** (Vercel automatically detects the static files and `/api/chat.js` serverless function).
-3. **Add Environment Variable**:
-   - In **Project Settings > Environment Variables**, add:
-     - `GEMINI_API_KEY`: Your Gemini API key.
-4. **Deploy**:
-   - Click **Deploy**. Vercel serves the frontend statically and runs the `/api/chat` serverless function.
-
----
-
-## Local Development
+## Run Locally
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Add your Gemini API key in .env
-echo "GEMINI_API_KEY=your_key_here" > .env
-
-# 3. Start local development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+To use the AI study assistant locally, add your Gemini API key in `.env`:
+```bash
+GEMINI_API_KEY=your_key_here
+```
+
+## Deploy to Netlify
+
+1. **Push this repo to GitHub**.
+2. **Import into Netlify**:
+   - In Netlify, click **Add new site > Import an existing project** and select your GitHub repo.
+   - **Build command**: leave blank (or `echo "Ready"`)
+   - **Publish directory**: `.` (or leave blank)
+   - **Functions directory**: `netlify/functions` (auto-detected from `netlify.toml`)
+3. **Environment Variables**:
+   - Go to **Site configuration > Environment variables**.
+   - Add `GEMINI_API_KEY` with your Gemini API key value.
+4. **Deploy**:
+   - Click **Deploy site**.
+   - Netlify serves the static site and deploys the serverless study coach function at `/.netlify/functions/chat` (rewritten to `/api/chat`).

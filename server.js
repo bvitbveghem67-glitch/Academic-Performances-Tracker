@@ -11,12 +11,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// API endpoint for Gemini study chat & quiz (shared with Vercel serverless function)
+// API endpoints for Gemini study chat & quiz (Netlify and Express)
 app.post('/api/chat', (req, res) => chatHandler(req, res));
+app.post('/.netlify/functions/chat', (req, res) => chatHandler(req, res));
 
-// Serve static files from root and hacka5thontraining subfolder
+// Serve static files from root
 app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, 'hacka5thontraining')));
 
 // Route requests to index.html
 app.get('/', (req, res) => {

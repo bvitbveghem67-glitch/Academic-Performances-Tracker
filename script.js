@@ -205,6 +205,8 @@ function appendMessage(role, contentNodeOrText, rawText = "") {
   return msg;
 }
 
+let chatApiUrl = "/api/chat";
+
 async function sendChatToGemini(userText) {
   if (isGenerating || !userText.trim()) return;
 
@@ -222,19 +224,34 @@ async function sendChatToGemini(userText) {
   chatMessages.appendChild(typingIndicator);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  const payload = {
+    message: trimmedText,
+    history: chatHistory,
+    context: {
+      weakestTopics: currentWeakestTopics,
+      allGrades: currentAllGrades,
+    },
+  };
+
   try {
-    const res = await fetch("/api/chat", {
+    let res = await fetch(chatApiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: trimmedText,
-        history: chatHistory,
-        context: {
-          weakestTopics: currentWeakestTopics,
-          allGrades: currentAllGrades,
-        },
-      }),
+      body: JSON.stringify(payload),
     });
+
+    // If 404 (e.g. on Netlify without redirects applied), automatically retry Netlify functions endpoint
+    if (res.status === 404 && chatApiUrl === "/api/chat") {
+      const netlifyRes = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (netlifyRes.status !== 404) {
+        chatApiUrl = "/.netlify/functions/chat";
+        res = netlifyRes;
+      }
+    }
 
     typingIndicator.remove();
 
