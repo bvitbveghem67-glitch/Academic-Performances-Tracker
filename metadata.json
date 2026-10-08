@@ -1,0 +1,7 @@
+{
+  "name": "Academic Performances Tracker",
+  "description": "A static grade tracker that draws a bar chart in the browser and highlights the two lowest scores.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
