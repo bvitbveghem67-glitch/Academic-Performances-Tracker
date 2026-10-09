@@ -184,7 +184,10 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
 } else {
   // Speech recognition not supported
   if (voiceBtn) {
-    voiceBtn.style.display = 'none';
+    voiceBtn.disabled = true;
+    voiceBtn.title = "Voice input not supported in this browser";
+    // Optionally add a visual disabled state via CSS class
+    voiceBtn.classList.add('disabled');
   }
 }
 

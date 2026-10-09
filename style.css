@@ -734,6 +734,16 @@ html, body {
   color: #122017;
 }
 
+/* Disabled state for voice button */
+.voice-button:disabled,
+.voice-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent !important;
+  border-color: #47634f !important;
+  color: #a8c5af !important;
+}
+
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(223, 178, 112, 0.4);
