@@ -20,3 +20,4 @@ build/
 
 # NO patchfiles those are our jobs
 *.patch
+*.sh
