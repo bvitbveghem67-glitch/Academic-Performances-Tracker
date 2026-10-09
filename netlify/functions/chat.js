@@ -29,12 +29,9 @@ function getApiKey() {
     candidates.push(process.env.GEMINI_API_KEY.trim());
   }
 
-  candidates.push('AIzaSyAMrkwo0WVw3vgENrIL39jdO9r708R1zdQ');
+  candidates.push('AQ.Ab8RN6I00Pd21xrRMmiZi79lu2BSdHftRA9bSLsvFJgQTXRRMQ');
 
-  // Always prefer a real Gemini API key starting with AIza
-  const validKey = candidates.find((k) => k && k.startsWith('AIza'));
-  return validKey || candidates[0] || 'AIzaSyAMrkwo0WVw3vgENrIL39jdO9r708R1zdQ';
-}
+
 
 async function callGemini(prompt, history = [], apiKey) {
   // 1. Try @google/genai SDK
