@@ -713,7 +713,7 @@ html, body {
   justify-content: center;
   transition: all 0.15s ease;
   min-height: 40px;
-  border-radius: 6px;
+  /*border-radius: 6px;*/
 }
 
 .voice-button:hover {
