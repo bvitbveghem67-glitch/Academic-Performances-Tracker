@@ -11,7 +11,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To use the AI study assistant locally, add your Gemini API key in `.env`:
+To use the AI study assistant locally, add your Gemini API key in `.env` (do not commit this file):
 ```bash
 GEMINI_API_KEY=your_key_here
 ```
@@ -30,3 +30,5 @@ GEMINI_API_KEY=your_key_here
 4. **Deploy**:
    - Click **Deploy site**.
    - Netlify serves the static site and deploys the serverless study coach function at `/.netlify/functions/chat` (rewritten to `/api/chat`).
+
+The Gemini key is used only by the server-side chat function. If a key was previously added to the browser code or committed to a public repository, revoke it and create a replacement in Google AI Studio.
