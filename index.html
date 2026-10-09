@@ -1,164 +1,166 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Academic Performances Tracker</title>
+    <meta name="description" content="A static grade tracker that draws a bar chart in the browser and highlights the two lowest scores.">
+    <meta property="og:title" content="Academic Performances Tracker">
+    <meta property="og:description" content="A static grade tracker that draws a bar chart in the browser and highlights the two lowest scores.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Academic Performances Tracker</title>
-  <meta name="description" content="A static grade tracker that draws a bar chart in the browser and highlights the two lowest scores.">
-  <meta property="og:title" content="Academic Performances Tracker">
-  <meta property="og:description" content="A static grade tracker that draws a bar chart in the browser and highlights the two lowest scores.">
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
-  <script src="script.js" defer></script>
-</head>
+  <body class="body" id="body">
+    <header class="header" id="header">
+      <nav class="nav">
+        <a class="hovertitle" href="#guide">Home</a>
+        <a class="hovertitle" href="#chat">Study Focus</a>
+        <a class="hovertitle" href="#grade-chart">Grades</a>
+      </nav>
+      <h1 class="app-brand-title">Academic Performances Tracker</h1>
+    </header>
 
-<body class="body" id="body">
-  <header class="header" id="header">
-    <nav class="nav">
-      <a class="hovertitle" href="#guide">Home</a>
-      <a class="hovertitle" href="#chat">Study Focus</a>
-      <a class="hovertitle" href="#grade-chart">Grades</a>
-    </nav>
-    <h1 class="app-brand-title">Academic Performances Tracker</h1>
-  </header>
-
-  <main class="content" id="content">
-    <section class="content-column" id="guide" aria-labelledby="guide-title">
-      <div>
-        <p class="eyebrow">GUIDE</p>
-        <h2 id="guide-title">Study with intention</h2>
-      </div>
-      <p>Log your current scores in the grade tracker below. Seeing everything at a glance makes it easy to focus your revision where it counts the most.</p>
-
-      <div class="stats-overview-card" id="stats-overview" hidden>
-        <div class="stat-badge">
-          <span class="stat-label">Average</span>
-          <span class="stat-value" id="stat-average">--</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">Subjects</span>
-          <span class="stat-value" id="stat-count">--</span>
-        </div>
-        <div class="stat-badge highlight-stat">
-          <span class="stat-label">Priority Review</span>
-          <span class="stat-value" id="stat-weakest">--</span>
-        </div>
-      </div>
-
-      <div class="study-tips-box">
-        <div class="tip-title">A quick note on active recall</div>
-        <p class="tip-text">Testing yourself on difficult ideas locks information into long-term memory far better than re-reading notes. Use the practice quiz feature on the right whenever you want a quick review.</p>
-      </div>
-    </section>
-
-    <section class="content-column chat-column" id="chat" aria-labelledby="chat-title">
-      <div class="chat-heading">
+    <main class="content" id="content">
+      <section class="content-column" id="guide" aria-labelledby="guide-title">
         <div>
-          <p class="eyebrow">STUDY ASSISTANT</p>
-          <h2 id="chat-title">Study focus</h2>
+          <p class="eyebrow">GUIDE</p>
+          <h2 id="guide-title">Study with intention</h2>
         </div>
-        <div class="chat-heading-actions">
-          <span class="connection-status" id="connection-status">Ready</span>
-          <button type="button" class="clear-chat-btn" id="clear-chat-btn" title="Clear chat history">Clear</button>
+        <p>Log your current scores in the grade tracker below. Seeing everything at a glance makes it easy to focus your revision where it counts the most.</p>
+
+        <div class="stats-overview-card" id="stats-overview" hidden>
+          <div class="stat-badge">
+            <span class="stat-label">Average</span>
+            <span class="stat-value" id="stat-average">--</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-label">Subjects</span>
+            <span class="stat-value" id="stat-count">--</span>
+          </div>
+          <div class="stat-badge highlight-stat">
+            <span class="stat-label">Priority Review</span>
+            <span class="stat-value" id="stat-weakest">--</span>
+          </div>
+        </div>
+
+        <div class="study-tips-box">
+          <div class="tip-title">A quick note on active recall</div>
+          <p class="tip-text">Testing yourself on difficult ideas locks information into long-term memory far better than re-reading notes. Use the practice quiz feature on the right whenever you want a quick review.</p>
+        </div>
+      </section>
+
+      <section class="content-column chat-column" id="chat" aria-labelledby="chat-title">
+        <div class="chat-heading">
+          <div>
+            <p class="eyebrow">STUDY ASSISTANT</p>
+            <h2 id="chat-title">Study focus</h2>
+          </div>
+          <div class="chat-heading-actions">
+            <span class="connection-status" id="connection-status">Ready</span>
+            <button type="button" class="clear-chat-btn" id="clear-chat-btn" title="Clear chat history">Clear</button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages" aria-live="polite" aria-label="Study chat messages">
+          <div class="message assistant-message">
+            <p>Hi! Enter your subjects and grades below, then click <strong>Create chart</strong>. Your two lowest scores will appear here, and you can ask for practice questions, explanations, or study tips anytime.</p>
+          </div>
+        </div>
+
+        <form class="chat-composer-form" id="chat-form">
+          <div class="chat-input-wrapper">
+            <input type="text" id="chat-input" placeholder="Ask a question or request a practice quiz..." autocomplete="off">
+            <button type="submit" id="chat-send" class="primary-button">Send</button>
+            <button type="button" id="voice-btn" class="voice-button" title="Voice input" aria-label="Voice input">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path><path d="M19.1 14a2 2 0 0 1-2.2 0l-1.5-4.2a2 2 0 0 0-3.8 0l-1.5 4.2a2 2 0 0 1-2.2 0"></path><line x1="12" y1="4" x2="12.01" y2="4"></line></svg>
+            </button>
+          </div>
+          <div class="quick-action-bar" id="quick-action-bar">
+            <button type="button" class="quick-action-btn" id="quiz-weak-btn" title="Add grades to unlock" disabled>Practice quiz</button>
+            <button type="button" class="quick-action-btn" id="study-plan-btn" title="Add grades to unlock" disabled>Study schedule</button>
+            <button type="button" class="quick-action-btn" id="explain-btn">Revision tips</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <section class="grade-chart-section" id="grade-chart" aria-labelledby="grade-chart-heading">
+      <div class="grade-chart-heading">
+        <div>
+          <p class="eyebrow">PROGRESS TRACKER</p>
+          <h2 id="grade-chart-heading">Your grades, at a glance</h2>
+        </div>
+        <p class="grade-chart-intro">Add your scores to see which topics could use more study time.</p>
+      </div>
+      <div class="grade-chart-layout">
+        <form class="grade-form" id="grade-form">
+          <label class="field-label" for="chart-name">Chart name</label>
+          <input id="chart-name" name="chartName" type="text" maxlength="60" value="My study progress" required>
+
+          <label class="field-label" for="chart-title">Chart title</label>
+          <input id="chart-title" name="chartTitle" type="text" maxlength="80" value="Grades by topic" required>
+
+          <div class="axis-fields">
+            <div>
+              <label class="field-label" for="axis-label-title">Horizontal axis</label>
+              <input id="axis-label-title" name="axisLabelTitle" type="text" maxlength="40" value="Topic" required>
+            </div>
+            <div>
+              <label class="field-label" for="axis-grade-title">Vertical axis</label>
+              <input id="axis-grade-title" name="axisGradeTitle" type="text" maxlength="40" value="Grade (%)" required>
+            </div>
+          </div>
+
+          <div class="grade-list-heading">
+            <span class="field-label">Topic grades</span>
+            <span class="field-label">Score / 100</span>
+          </div>
+          <div class="grade-rows" id="grade-rows">
+            <div class="grade-row">
+              <label class="visually-hidden" for="topic-1">Topic 1</label>
+              <input id="topic-1" name="topic" type="text" maxlength="50" placeholder="e.g. Algebra" required>
+              <label class="visually-hidden" for="grade-1">Grade for topic 1</label>
+              <input id="grade-1" name="grade" type="number" min="0" max="100" step="1" placeholder="0–100" required>
+              <button class="remove-grade" type="button" aria-label="Remove topic 1" disabled>&times;</button>
+            </div>
+            <div class="grade-row">
+              <label class="visually-hidden" for="topic-2">Topic 2</label>
+              <input id="topic-2" name="topic" type="text" maxlength="50" placeholder="e.g. Biology" required>
+              <label class="visually-hidden" for="grade-2">Grade for topic 2</label>
+              <input id="grade-2" name="grade" type="number" min="0" max="100" step="1" placeholder="0–100" required>
+              <button class="remove-grade" type="button" aria-label="Remove topic 2" disabled>&times;</button>
+            </div>
+          </div>
+          <div class="grade-form-actions">
+            <div class="action-group-left">
+              <button class="secondary-button" id="add-grade" type="button">+ Add topic</button>
+              <button class="ghost-button" id="sample-data-btn" type="button" title="Fill sample subjects and grades">Sample data</button>
+              <button class="ghost-button" id="clear-form-btn" type="button" title="Reset all inputs">Reset</button>
+            </div>
+            <button class="primary-button" type="submit">Create chart</button>
+          </div>
+        </form>
+
+        <div class="grade-chart-result">
+          <div class="chart-result-heading">
+            <div>
+              <p class="eyebrow" id="chart-name-output">MY STUDY PROGRESS</p>
+              <h3 id="chart-title-output">Grades by topic</h3>
+            </div>
+            <span id="chart-count" class="chart-count">0 topics</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="grade-chart-canvas" role="img" aria-label="Bar chart of grades by topic"></canvas>
+            <p class="chart-empty" id="chart-empty">Enter at least two topics and grades to create a chart.</p>
+          </div>
+          <p class="chart-axis-summary" id="chart-axis-summary">Topic · Grade (%)</p>
         </div>
       </div>
-
-      <div class="chat-messages" id="chat-messages" aria-live="polite" aria-label="Study chat messages">
-        <div class="message assistant-message">
-          <p>Hi! Enter your subjects and grades below, then click <strong>Create chart</strong>. Your two lowest scores will appear here, and you can ask for practice questions, explanations, or study tips anytime.</p>
-        </div>
-      </div>
-
-      <form class="chat-composer-form" id="chat-form">
-        <div class="chat-input-wrapper">
-          <input type="text" id="chat-input" placeholder="Ask a question or request a practice quiz..." autocomplete="off">
-          <button type="submit" id="chat-send" class="primary-button">Send</button>
-        </div>
-        <div class="quick-action-bar" id="quick-action-bar">
-          <button type="button" class="quick-action-btn" id="quiz-weak-btn" title="Add grades to unlock" disabled>Practice quiz</button>
-          <button type="button" class="quick-action-btn" id="study-plan-btn" title="Add grades to unlock" disabled>Study schedule</button>
-          <button type="button" class="quick-action-btn" id="explain-btn">Revision tips</button>
-        </div>
-      </form>
     </section>
-  </main>
-
-  <section class="grade-chart-section" id="grade-chart" aria-labelledby="grade-chart-heading">
-    <div class="grade-chart-heading">
-      <div>
-        <p class="eyebrow">PROGRESS TRACKER</p>
-        <h2 id="grade-chart-heading">Your grades, at a glance</h2>
-      </div>
-      <p class="grade-chart-intro">Add your scores to see which topics could use more study time.</p>
-    </div>
-    <div class="grade-chart-layout">
-      <form class="grade-form" id="grade-form">
-        <label class="field-label" for="chart-name">Chart name</label>
-        <input id="chart-name" name="chartName" type="text" maxlength="60" value="My study progress" required>
-
-        <label class="field-label" for="chart-title">Chart title</label>
-        <input id="chart-title" name="chartTitle" type="text" maxlength="80" value="Grades by topic" required>
-
-        <div class="axis-fields">
-          <div>
-            <label class="field-label" for="axis-label-title">Horizontal axis</label>
-            <input id="axis-label-title" name="axisLabelTitle" type="text" maxlength="40" value="Topic" required>
-          </div>
-          <div>
-            <label class="field-label" for="axis-grade-title">Vertical axis</label>
-            <input id="axis-grade-title" name="axisGradeTitle" type="text" maxlength="40" value="Grade (%)" required>
-          </div>
-        </div>
-
-        <div class="grade-list-heading">
-          <span class="field-label">Topic grades</span>
-          <span class="field-label">Score / 100</span>
-        </div>
-        <div class="grade-rows" id="grade-rows">
-          <div class="grade-row">
-            <label class="visually-hidden" for="topic-1">Topic 1</label>
-            <input id="topic-1" name="topic" type="text" maxlength="50" placeholder="e.g. Algebra" required>
-            <label class="visually-hidden" for="grade-1">Grade for topic 1</label>
-            <input id="grade-1" name="grade" type="number" min="0" max="100" step="1" placeholder="0–100" required>
-            <button class="remove-grade" type="button" aria-label="Remove topic 1" disabled>&times;</button>
-          </div>
-          <div class="grade-row">
-            <label class="visually-hidden" for="topic-2">Topic 2</label>
-            <input id="topic-2" name="topic" type="text" maxlength="50" placeholder="e.g. Biology" required>
-            <label class="visually-hidden" for="grade-2">Grade for topic 2</label>
-            <input id="grade-2" name="grade" type="number" min="0" max="100" step="1" placeholder="0–100" required>
-            <button class="remove-grade" type="button" aria-label="Remove topic 2" disabled>&times;</button>
-          </div>
-        </div>
-        <div class="grade-form-actions">
-          <div class="action-group-left">
-            <button class="secondary-button" id="add-grade" type="button">+ Add topic</button>
-            <button class="ghost-button" id="sample-data-btn" type="button" title="Fill sample subjects and grades">Sample data</button>
-            <button class="ghost-button" id="clear-form-btn" type="button" title="Reset all inputs">Reset</button>
-          </div>
-          <button class="primary-button" type="submit">Create chart</button>
-        </div>
-      </form>
-
-      <div class="grade-chart-result">
-        <div class="chart-result-heading">
-          <div>
-            <p class="eyebrow" id="chart-name-output">MY STUDY PROGRESS</p>
-            <h3 id="chart-title-output">Grades by topic</h3>
-          </div>
-          <span id="chart-count" class="chart-count">0 topics</span>
-        </div>
-        <div class="chart-canvas-wrap">
-          <canvas id="grade-chart-canvas" role="img" aria-label="Bar chart of grades by topic"></canvas>
-          <p class="chart-empty" id="chart-empty">Enter at least two topics and grades to create a chart.</p>
-        </div>
-        <p class="chart-axis-summary" id="chart-axis-summary">Topic · Grade (%)</p>
-      </div>
-    </div>
-  </section>
-</body>
+  </body>
 </html>

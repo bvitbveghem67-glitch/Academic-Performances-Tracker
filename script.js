@@ -8,6 +8,7 @@ const explainBtn = document.querySelector("#explain-btn");
 const clearChatBtn = document.querySelector("#clear-chat-btn");
 const sampleDataBtn = document.querySelector("#sample-data-btn");
 const clearFormBtn = document.querySelector("#clear-form-btn");
+const voiceBtn = document.querySelector("#voice-btn");
 
 const statsOverview = document.querySelector("#stats-overview");
 const statAverage = document.querySelector("#stat-average");
@@ -25,6 +26,10 @@ let currentWeakestTopics = [];
 let currentAllGrades = [];
 const chatHistory = [];
 let isGenerating = false;
+
+// Speech recognition
+let speechRecognition = null;
+let isListening = false;
 
 function updateGradeRowControls() {
   const rows = [...gradeRows.querySelectorAll(".grade-row")];
@@ -133,6 +138,81 @@ if (clearFormBtn) {
     currentAllGrades = [];
     if (quizWeakBtn) quizWeakBtn.disabled = true;
     if (studyPlanBtn) studyPlanBtn.disabled = true;
+  });
+}
+
+// Initialize speech recognition if supported
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.continuous = false;
+  speechRecognition.interimResults = false;
+  speechRecognition.lang = 'en-US';
+
+  speechRecognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (chatInput) {
+      chatInput.value = transcript;
+      // Trigger input event to update any potential char count or validation
+      chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    isListening = false;
+    updateVoiceButton();
+  };
+
+  speechRecognition.onstart = () => {
+    isListening = true;
+    updateVoiceButton();
+  };
+
+  speechRecognition.onend = () => {
+    isListening = false;
+    updateVoiceButton();
+  };
+
+  speechRecognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    isListening = false;
+    updateVoiceButton();
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      // User denied permission or service not available
+      if (chatInput) {
+        chatInput.placeholder = "Voice input not available. Type your question...";
+      }
+    }
+  };
+} else {
+  // Speech recognition not supported
+  if (voiceBtn) {
+    voiceBtn.style.display = 'none';
+  }
+}
+
+// Update voice button appearance based on state
+function updateVoiceButton() {
+  if (!voiceBtn) return;
+
+  if (isListening) {
+    voiceBtn.classList.add('listening');
+    voiceBtn.title = "Listening... Click to stop";
+  } else {
+    voiceBtn.classList.remove('listening');
+    voiceBtn.title = "Voice input";
+  }
+}
+
+// Voice button click handler
+if (voiceBtn && speechRecognition) {
+  voiceBtn.addEventListener("click", () => {
+    if (isListening) {
+      speechRecognition.stop();
+    } else {
+      // Clear placeholder if it was set due to unavailability
+      if (chatInput && chatInput.placeholder.includes("Voice input not available")) {
+        chatInput.placeholder = "Ask a question or request a practice quiz...";
+      }
+      speechRecognition.start();
+    }
   });
 }
 

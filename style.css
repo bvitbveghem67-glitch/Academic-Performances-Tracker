@@ -700,6 +700,52 @@ html, body {
   clip-path: inset(50%);
 }
 
+/* Voice Button Styles */
+.voice-button {
+  background: transparent;
+  border: 1px solid #47634f;
+  color: #a8c5af;
+  font-size: 14px;
+  padding: 0 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  border-radius: 6px;
+}
+
+.voice-button:hover {
+  background: #182e22;
+  color: #edf3ee;
+  border-color: #649673;
+}
+
+.voice-button.listening {
+  background: #dfb28a;
+  color: #122017;
+  border-color: #dfb28a;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-button.listening:hover {
+  background: #e6b97d;
+  color: #122017;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(223, 178, 112, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(223, 178, 112, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(223, 178, 112, 0);
+  }
+}
+
 @media (max-width: 768px) {
   html, body {
     padding: 12px;
