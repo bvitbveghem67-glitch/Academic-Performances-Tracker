@@ -29,7 +29,7 @@ function getApiKey() {
     candidates.push(process.env.GEMINI_API_KEY.trim());
   }
 
-  candidates.push('AQ.Ab8RN6I00Pd21xrRMmiZi79lu2BSdHftRA9bSLsvFJgQTXRRMQ');
+  candidates.push('GEMINI_API_KEY');
 
 
 
